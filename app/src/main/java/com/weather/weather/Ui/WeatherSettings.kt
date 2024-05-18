@@ -75,7 +75,7 @@ class WeatherSettings(controller: Controller) {
                     GlobalScope.launch { controller.setCity(city.value) }
                 }
                 ItemInList(
-                    text = "Change city",
+                    text = "Search city",
                     showSaveButton = false,
                     onCancelFunction = { city.value = controller.getCity()},
                     forceClose = changeUi
@@ -285,6 +285,7 @@ class WeatherSettings(controller: Controller) {
                 label = {Text("Search city")},
                 singleLine = true
             )}
+
             if(findedCity.value!=null){
                 val tmp = findedCity.value
                 if(tmp != null){
@@ -323,22 +324,6 @@ class WeatherSettings(controller: Controller) {
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(text = "First time setup:", fontSize = 32.sp)
-            Text(text = "Weather Service API Key", fontSize = 24.sp)
-            Row(verticalAlignment = Alignment.CenterVertically){
-//                RadioButton(
-//                    selected = weatherProvider.value == WeatherProviders.OPENMETEO,
-//                    onClick = {
-//                        weatherProvider.value = WeatherProviders.OPENMETEO
-//                        key.value = ""
-//                    }
-//                )
-//                Text(text = "OpenMeteo")
-                RadioButton(
-                    selected =  weatherProvider.value == WeatherProviders.OPENWEATHER,
-                    onClick = { weatherProvider.value = WeatherProviders.OPENWEATHER }
-                )
-                Text(text = "OpenWeather")
-            }
             if(weatherProvider.value == WeatherProviders.OPENWEATHER){
                 OutlinedTextField(
                     value = key.value,
@@ -346,19 +331,6 @@ class WeatherSettings(controller: Controller) {
                     label = {Text("Insert api key")},
                     singleLine = true,
                     isError = key.value == "")
-            }
-            Text(text = "Select temperature unit", fontSize = 24.sp)
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                RadioButton(
-                    selected = temperatureSymbol.value == TemperatureSymbols.CELSIUS,
-                    onClick = { temperatureSymbol.value = TemperatureSymbols.CELSIUS }
-                )
-                Text(text = TemperatureSymbols.CELSIUS.symbol)
-                RadioButton(
-                    selected = temperatureSymbol.value == TemperatureSymbols.FAHRENHEIT,
-                    onClick = { temperatureSymbol.value = TemperatureSymbols.FAHRENHEIT }
-                )
-                Text(text = TemperatureSymbols.FAHRENHEIT.symbol)
             }
             Text(text = "Enter city name", fontSize = 24.sp)
             if(notDetectableCity.value){
