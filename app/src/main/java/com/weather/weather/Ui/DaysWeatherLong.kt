@@ -73,7 +73,7 @@ class DaysWeatherLong(controller: Controller) {
                 modifier = Modifier.weight(0.3f)
             )
             Text(
-                "$minTemperature / $maxTemperature ${controller.getWeatherMetrics().symbol}",
+                "Min $minTemperature / Max $maxTemperature ${controller.getWeatherMetrics().symbol}",
                 modifier = Modifier.weight(0.3f)
             )
         }

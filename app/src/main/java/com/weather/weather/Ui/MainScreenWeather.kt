@@ -41,17 +41,20 @@ class MainScreenWeather(
     fun onForecastChange(){
         currentDay.value = if(controller.getHourlyForecast().size==0) null else{controller.getHourlyForecast().first()}
     }
+
     fun resetForecast(){
         currentDay.value = null
     }
+
     private fun formatTime(epochSeconds: Long): String{
         val dt = LocalDateTime.ofEpochSecond(epochSeconds, 0, ZoneOffset.UTC)
         return dt.format(DateTimeFormatter.ofPattern("hh:mm a"))
     }
+
     @Composable
     fun Render(modifier: Modifier = Modifier) {
         val currentHourForecast = currentDay.value
-        val currentDayForecast = controller.getDailyForecast() // Assuming this function exists
+        val currentDayForecast = controller.getDailyForecast()
 
         if (currentHourForecast != null && currentDayForecast != null) {
             Column(
@@ -98,8 +101,7 @@ class MainScreenWeather(
         return DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT).format(zonedDateTime)
     }
 
-    //https://stackoverflow.com/questions/63971569/androidautosizetexttype-in-jetpack-compose
-    //i would force it to dp but compose don't allow me :c
+
     @Composable
     private fun AutoSizeText(
         text: String,
