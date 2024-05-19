@@ -46,6 +46,8 @@ open class WeatherApiBaseClass(
         var condition: WeatherCondition,
         val dayOfMonth:Int,
         val dayOfWeek:DaysOfTheWeek,
+        val sunrise: Long,
+        val sunset: Long,
     )
 
     data class LatNLong(
@@ -157,7 +159,7 @@ open class WeatherApiBaseClass(
         return null
     }
     fun gMessage():String{
-        return "Weather & Geocoding provided by \n ${weatherProvider.site}"
+        return ""
     }
     fun gTemperatureSymbol():TemperatureSymbols{
         return temperatureSymbol

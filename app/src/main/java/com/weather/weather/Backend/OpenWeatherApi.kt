@@ -82,78 +82,85 @@ class OpenWeatherApi(weatherApiKey:String, settingsData:SettingsData, previousRe
         return responseRaw
     }
 
-    protected override fun processData(responseRaw: ResponseRaw){
-
+    protected override fun processData(responseRaw: ResponseRaw) {
         dailyForecast.clear()
         hourlyForecast.clear()
 
-        val parsedResponse:JsonObject = Json.parseToJsonElement(responseRaw.rawResponse).jsonObject
+        val parsedResponse: JsonObject = Json.parseToJsonElement(responseRaw.rawResponse).jsonObject
 
         try {
-            var mostlyWeatherIs:IntArray = IntArray(WeatherCondition.entries.size)
-            val hourlyTemperature:JsonArray = parsedResponse["list"]!!.jsonArray
+            var mostlyWeatherIs: IntArray = IntArray(WeatherCondition.entries.size)
+            val hourlyTemperature: JsonArray = parsedResponse["list"]!!.jsonArray
+
+            // Assuming the city object contains the daily data including sunrise and sunset
+            val cityInfo: JsonObject = parsedResponse["city"]!!.jsonObject
+            val sunrise: Long = cityInfo["sunrise"]!!.jsonPrimitive.long
+            val sunset: Long = cityInfo["sunset"]!!.jsonPrimitive.long
+
             hourlyTemperature.forEach {
-                val jsonObject:JsonObject = it.jsonObject
-                val mainObject:JsonObject = jsonObject["main"]!!.jsonObject
+                val jsonObject: JsonObject = it.jsonObject
+                val mainObject: JsonObject = jsonObject["main"]!!.jsonObject
                 val windObject: JsonObject = jsonObject["wind"]!!.jsonObject
 
-
-                val timeZone:ZonedDateTime = Instant.ofEpochSecond(jsonObject["dt"]!!.jsonPrimitive.long).atZone(TimeZone.getDefault().toZoneId())
-                val hourWeather: HourForecast = HourForecast(
-                    temperature = when(temperatureSymbol){
-                        TemperatureSymbols.CELSIUS -> kelvinToCelcius(mainObject["temp"]!!.jsonPrimitive.float)
-                        TemperatureSymbols.FAHRENHEIT -> celsiusToFahrenheit(kelvinToCelcius(mainObject["temp"]!!.jsonPrimitive.float))
-                    } ,
+                val timeZone: ZonedDateTime = Instant.ofEpochSecond(jsonObject["dt"]!!.jsonPrimitive.long)
+                    .atZone(TimeZone.getDefault().toZoneId())
+                val temperature = when (temperatureSymbol) {
+                    TemperatureSymbols.CELSIUS -> kelvinToCelcius(mainObject["temp"]!!.jsonPrimitive.float)
+                    TemperatureSymbols.FAHRENHEIT -> celsiusToFahrenheit(kelvinToCelcius(mainObject["temp"]!!.jsonPrimitive.float))
+                    else -> mainObject["temp"]!!.jsonPrimitive.float  // Add default case for safety, even if unused
+                }
+                val hourWeather = HourForecast(
+                    temperature = temperature,  // Use the computed temperature here
                     weatherCondition = formatWeatherCode(jsonObject["weather"]!!.jsonArray[0].jsonObject["id"]!!.jsonPrimitive.int),
                     hour = timeZone.hour,
                     dayOfMonth = timeZone.dayOfMonth,
-                    dayOfWeek =  DaysOfTheWeek.entries[timeZone.dayOfWeek.value-1],
+                    dayOfWeek = DaysOfTheWeek.entries[timeZone.dayOfWeek.value-1],
                     pressure = mainObject["pressure"]!!.jsonPrimitive.int,
                     humidity = mainObject["humidity"]!!.jsonPrimitive.int,
-                    windSpeed = windObject["speed"]!!.jsonPrimitive.float,
+                    windSpeed = windObject["speed"]!!.jsonPrimitive.float
                 )
+
                 hourlyForecast.add(hourWeather)
 
-                if(dailyForecast.size == 0 || dailyForecast.last().dayOfMonth != hourWeather.dayOfMonth ){
-                    mostlyWeatherIs = IntArray(WeatherCondition.entries.size)
-
-                    val dayWeather:DailyForecast = DailyForecast(
+                if (dailyForecast.isEmpty() || dailyForecast.last().dayOfMonth != hourWeather.dayOfMonth) {
+                    val dayWeather = DailyForecast(
                         minTemperature = hourWeather.temperature,
                         maxTemperature = hourWeather.temperature,
                         condition = hourWeather.weatherCondition,
                         dayOfMonth = hourWeather.dayOfMonth,
                         dayOfWeek = hourWeather.dayOfWeek,
+                        sunrise = sunrise,
+                        sunset = sunset
                     )
                     mostlyWeatherIs[hourWeather.weatherCondition.ordinal] += 1
                     dailyForecast.add(dayWeather)
-                }
-                else{
-                    if(dailyForecast.last().minTemperature > hourWeather.temperature){
-                        dailyForecast.last().minTemperature = hourWeather.temperature
+                } else {
+                    val lastForecast = dailyForecast.last()
+                    if (lastForecast.minTemperature > hourWeather.temperature) {
+                        lastForecast.minTemperature = hourWeather.temperature
                     }
-                    if(dailyForecast.last().maxTemperature < hourWeather.temperature){
-                        dailyForecast.last().maxTemperature = hourWeather.temperature
+                    if (lastForecast.maxTemperature < hourWeather.temperature) {
+                        lastForecast.maxTemperature = hourWeather.temperature
                     }
                     mostlyWeatherIs[hourWeather.weatherCondition.ordinal] += 1
-                    dailyForecast.last().condition = WeatherCondition.entries[mostlyWeatherIs.indexOf(mostlyWeatherIs.max())]
+                    lastForecast.condition = WeatherCondition.entries[mostlyWeatherIs.indexOf(mostlyWeatherIs.max())]
                 }
             }
-            // TODO?
-            // because openWeather starts sending from current time
-            // the last day mayyy be not full, for example contain only one - two hours
+
             this.responseRaw = responseRaw
             notifyListeners()
-        }catch (e:Exception){
-            val error:WeatherErrors? = getErrorFromResponse(parsedResponse)
-            if(error !=null){
+        } catch (e: Exception) {
+            val error: WeatherErrors? = getErrorFromResponse(parsedResponse)
+            if (error != null) {
                 notifyErrorListeners(error)
-            } else{
+            } else {
                 notifyErrorListeners(WeatherErrors.Unknown)
-                Log.e("weatherError",e.stackTraceToString())
+                Log.e("weatherError", e.stackTraceToString())
             }
-
         }
     }
+
+
     private fun getErrorFromResponse(parsedResponse:JsonObject):WeatherErrors?{
         try {
             val code:Int =  parsedResponse["cod"]!!.jsonPrimitive.int
@@ -166,6 +173,7 @@ class OpenWeatherApi(weatherApiKey:String, settingsData:SettingsData, previousRe
             return null
         }
     }
+
     private fun formatWeatherCode(code:Int):WeatherCondition{
         return when(code){
             in (200..299) -> WeatherCondition.THUNDERSTORM

@@ -22,9 +22,13 @@ import com.weather.weather.Backend.WeatherApiBaseClass
 import com.weather.weather.Controller
 import com.weather.weather.DaysOfTheWeek
 import com.weather.weather.Months
+import java.time.Instant
 import java.time.LocalDateTime
+import java.time.ZoneId
 import java.time.ZoneOffset
+import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
+import java.time.format.FormatStyle
 
 class MainScreenWeather(
     controller:Controller,
@@ -66,6 +70,7 @@ class MainScreenWeather(
                     fontWeight = FontWeight.Bold,
                     fontSize = 64.sp
                 )
+                Spacer(Modifier.weight(1f))
                 Text(
                     text = "${stringResource(Months.entries[LocalDateTime.now().monthValue - 1].shortName)} ${currentHourForecast.dayOfMonth} ${stringResource(currentHourForecast.dayOfWeek.shortName)}",
                     fontWeight = FontWeight.Bold,
@@ -77,13 +82,20 @@ class MainScreenWeather(
                     fontSize = 18.sp
                 )
                 Text("Pressure: ${currentHourForecast.pressure} hPa")
-                Text("Humidity: ${currentHourForecast.humidity}%")
-                Text("Wind Speed: ${currentHourForecast.windSpeed} m/s")
-//                Text("Sunrise: ${formatTime(currentDayForecast.first().sunrise)}")
-//                Text("Sunset: ${formatTime(currentDayForecast.first().sunset)}")
+                Text("\uD83D\uDCA7 Humidity: ${currentHourForecast.humidity}%")
+                Text("\uD83D\uDCA8 Wind Speed: ${currentHourForecast.windSpeed} m/s")
+
+                Text("\uD83C\uDF05 Sunrise: ${formatTime1(currentDayForecast.first().sunrise)}")
+                Text("\uD83C\uDF04 Sunset: ${formatTime1(currentDayForecast.first().sunset)}")
                 Spacer(Modifier.weight(3f))
             }
         }
+    }
+
+    private fun formatTime1(epochSeconds: Long): String {
+        val instant = Instant.ofEpochSecond(epochSeconds)
+        val zonedDateTime = ZonedDateTime.ofInstant(instant, ZoneId.systemDefault())
+        return DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT).format(zonedDateTime)
     }
 
     //https://stackoverflow.com/questions/63971569/androidautosizetexttype-in-jetpack-compose

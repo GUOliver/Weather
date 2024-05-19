@@ -117,7 +117,8 @@ class OpenMeteoApi(settingsData:SettingsData, previousResponse : ResponseRaw? = 
                         condition = hourWeather.weatherCondition,
                         dayOfMonth = hourWeather.dayOfMonth,
                         dayOfWeek = hourWeather.dayOfWeek,
-
+                        sunrise = 1,
+                        sunset = 1
                     )
                     mostlyWeatherIs[hourWeather.weatherCondition.ordinal] += 1
                     dailyForecast.add(dayWeather)

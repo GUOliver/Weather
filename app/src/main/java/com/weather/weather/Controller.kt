@@ -227,8 +227,6 @@ class Controller {
         ) {
             mainScreenWeather.Render()
             daysWeatherLong.Render()
-            Spacer(modifier = Modifier.weight(1f))
-            Text(weatherApi.gMessage(), modifier = Modifier.fillMaxWidth(1f), textAlign = TextAlign.Center)
         }
     }
 
