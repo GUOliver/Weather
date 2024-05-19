@@ -19,7 +19,7 @@ I also tried using Jetpack, a more modern way to compose the UI instead of using
 Figma Prototype Design link: https://www.figma.com/design/8uIkmYZpknZKzVtqyOgLnZ/Weather-Display-App?node-id=0%3A1&t=qJaF7JO92u38OBeO-1
 
 ## Screenshots
-![img.png](screenshots/img.png)
+![img.png](screenshots/img1.png)
 ![img.png](screenshots/img.png)
 
 ## References
