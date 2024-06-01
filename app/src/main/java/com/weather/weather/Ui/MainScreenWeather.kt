@@ -1,15 +1,25 @@
 package com.weather.weather.Ui
 
 import android.util.Log
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -20,12 +30,17 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.TextUnitType.Companion.Sp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.weather.weather.Backend.WeatherApiBaseClass
@@ -46,21 +61,25 @@ import java.time.format.FormatStyle
 
 class MainScreenWeather(
     controller:Controller,
-    ){
-    private val controller:Controller
+    ) {
+    private val controller: Controller
     private val currentDay = mutableStateOf<WeatherApiBaseClass.HourForecast?>(null)
-    init{
+
+    init {
         this.controller = controller
     }
-    fun onForecastChange(){
-        currentDay.value = if(controller.getHourlyForecast().size==0) null else{controller.getHourlyForecast().first()}
+
+    fun onForecastChange() {
+        currentDay.value = if (controller.getHourlyForecast().size == 0) null else {
+            controller.getHourlyForecast().first()
+        }
     }
 
-    fun resetForecast(){
+    fun resetForecast() {
         currentDay.value = null
     }
 
-    private fun formatTime(epochSeconds: Long): String{
+    private fun formatTime(epochSeconds: Long): String {
         val dt = LocalDateTime.ofEpochSecond(epochSeconds, 0, ZoneOffset.UTC)
         return dt.format(DateTimeFormatter.ofPattern("hh:mm a"))
     }
@@ -125,28 +144,33 @@ class MainScreenWeather(
                     textStyle = TextStyle(fontSize = 48.sp, fontWeight = FontWeight.Bold)
                 )
                 Spacer(Modifier.weight(1f))
+
                 Text(
-                    text = "${currentHourForecast.temperature}${controller.getWeatherMetrics().symbol}",
+                    text = "${currentHourForecast.temperature}${controller.getWeatherMetrics().symbol} | ${currentHourForecast.weatherCondition.value}",
                     fontWeight = FontWeight.Bold,
-                    fontSize = 64.sp
+                    fontSize = 30.sp
                 )
                 Spacer(Modifier.weight(1f))
-                Text(
-                    text = "${stringResource(Months.entries[LocalDateTime.now().monthValue - 1].shortName)} ${currentHourForecast.dayOfMonth} ${stringResource(currentHourForecast.dayOfWeek.shortName)}",
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 18.sp
-                )
-                Text(
-                    text = currentHourForecast.weatherCondition.value,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 18.sp
-                )
-                Text("Pressure: ${currentHourForecast.pressure} hPa")
-                Text("\uD83D\uDCA7 Humidity: ${currentHourForecast.humidity}%")
-                Text("\uD83D\uDCA8 Wind Speed: ${currentHourForecast.windSpeed} m/s")
 
+                Text(
+                    text = "${stringResource(Months.entries[LocalDateTime.now().monthValue - 1].shortName)} ${currentHourForecast.dayOfMonth} ${
+                        stringResource(
+                            currentHourForecast.dayOfWeek.shortName
+                        )
+                    }",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 18.sp
+                )
+
+                Spacer(Modifier.height(16.dp))
+//                Text("Pressure: ${currentHourForecast.pressure} hPa")
+//                Text("\uD83D\uDCA7 Humidity: ${currentHourForecast.humidity}%")
+//                Text("\uD83D\uDCA8 Wind Speed: ${currentHourForecast.windSpeed} m/s")
 //                Text("\uD83C\uDF05 Sunrise: ${formatTime1(currentDayForecast.first().sunrise)}")
 //                Text("\uD83C\uDF04 Sunset: ${formatTime1(currentDayForecast.first().sunset)}")
+
+                WeatherCard(currentHourForecast)
+
                 Spacer(Modifier.weight(3f))
             }
         }
@@ -188,5 +212,73 @@ class MainScreenWeather(
         )
     }
 
+    @Composable
+    fun WeatherCard(weather: WeatherApiBaseClass.HourForecast) {
+        Row(modifier = Modifier.fillMaxWidth()) {
+            // Card for Humidity
+            SquareStatCard(
+                title = "Humidity",
+                data = "${weather.humidity}%",
+                modifier = Modifier.weight(1f)
+            )
 
+            Spacer(Modifier.width(16.dp)) // Space between the cards
+
+            // Card for Pressure
+            SquareStatCard(
+                title = "Pressure",
+                data = "${weather.pressure} hPa",
+                modifier = Modifier.weight(1f)
+            )
+        }
+
+        Spacer(Modifier.height(16.dp))
+
+        Row(modifier = Modifier.fillMaxWidth()) {
+            // Card for Wind Speed
+            SquareStatCard(
+                title = "Wind",
+                data = "${weather.windSpeed} m/s",
+                modifier = Modifier.weight(1f)
+            )
+
+            Spacer(Modifier.width(16.dp)) // Space between the cards
+
+            SquareStatCard(
+                title = "Pressure",
+                data = "${weather.pressure} hPa",
+                modifier = Modifier.weight(1f)
+            )
+        }
+    }
+
+    @Composable
+    fun SquareStatCard(title: String, data: String, modifier: Modifier) {
+        Card(
+            modifier = modifier
+                .aspectRatio(1f)
+                .border(1.dp, Color.Gray, RoundedCornerShape(12.dp)),
+            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+        ) {
+            Column(
+                verticalArrangement = Arrangement.Center,
+                horizontalAlignment = Alignment.Start, // Ensures the text alignment is to the left
+                modifier = Modifier
+                    .padding(16.dp)
+                    .fillMaxWidth()
+            ) {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(Modifier.height(8.dp))
+                Text(
+                    text = data,
+                    style = MaterialTheme.typography.displaySmall,
+                    color = MaterialTheme.colorScheme.secondary
+                )
+            }
+        }
+    }
 }
