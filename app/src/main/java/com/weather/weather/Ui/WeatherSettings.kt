@@ -1,5 +1,6 @@
 package com.weather.weather.Ui
 
+import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.ui.window.Dialog
 import androidx.compose.foundation.layout.Arrangement
@@ -16,8 +17,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.Divider
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
@@ -32,7 +31,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.focus.FocusManager
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
@@ -60,9 +58,7 @@ class WeatherSettings(controller: Controller) {
         this.controller = controller
     }
     @Composable
-    fun Render(
-        modifier: Modifier = Modifier
-    ) {
+    fun Render() {
         var weatherApiKey by rememberSaveable{mutableStateOf(controller.getWeatherKey()) }
         var weatherProvider by remember {mutableStateOf(controller.getWeatherProvider())}
 //        var temperatureMetrics by remember {mutableStateOf(controller.getWeatherMetrics())}
@@ -112,13 +108,6 @@ class WeatherSettings(controller: Controller) {
                     )
                     Text(text = "OpenWeather (You need an API key)")
                 }
-//                Row(verticalAlignment = Alignment.CenterVertically){
-//                    RadioButton(
-//                        selected = weatherProvider == WeatherProviders.OPENMETEO,
-//                        onClick = { weatherProvider = WeatherProviders.OPENMETEO }
-//                    )
-//                    Text(text = "OpenMeteo")
-//                }
                 if(weatherProvider == WeatherProviders.OPENWEATHER) {
                     OutlinedTextField(
                         value = weatherApiKey,

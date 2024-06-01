@@ -1,27 +1,41 @@
 package com.weather.weather.Ui
 
+import android.util.Log
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.weather.weather.Backend.WeatherApiBaseClass
 import com.weather.weather.Controller
 import com.weather.weather.DaysOfTheWeek
 import com.weather.weather.Months
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.time.Instant
 import java.time.LocalDateTime
 import java.time.ZoneId
@@ -53,8 +67,11 @@ class MainScreenWeather(
 
     @Composable
     fun Render(modifier: Modifier = Modifier) {
+        var searchQuery by remember { mutableStateOf("") }
         val currentHourForecast = currentDay.value
         val currentDayForecast = controller.getDailyForecast()
+        var errorMessage by remember { mutableStateOf("") }
+        var showErrorMessage by remember { mutableStateOf(false) }
 
         if (currentHourForecast != null && currentDayForecast != null) {
             Column(
@@ -63,6 +80,46 @@ class MainScreenWeather(
                     .padding(0.dp, 38.dp, 0.dp, 0.dp)
                     .fillMaxHeight(0.4f)
             ) {
+                OutlinedTextField(
+                    value = searchQuery,
+                    onValueChange = { searchQuery = it },
+                    label = { Text("Search City") },
+                    placeholder = { Text("Enter city name") },
+                    singleLine = true,
+                    textStyle = TextStyle(fontSize = 20.sp, fontWeight = FontWeight.Bold),
+                    modifier = Modifier.fillMaxWidth(),
+                    keyboardOptions = KeyboardOptions.Default.copy(imeAction = ImeAction.Done),
+                    keyboardActions = KeyboardActions(
+                        onDone = {
+                            GlobalScope.launch {
+                                if (searchQuery.trim().isEmpty()) {
+                                    errorMessage = "The specified city cannot be empty."
+                                    showErrorMessage = true
+//                                    Log.d("CitySearch", "Search query is empty.")
+                                } else {
+                                    val resultCode = controller.setCity(searchQuery)
+                                    if (resultCode == -1) {
+                                        errorMessage = "The specified city does not exist."
+//                                        Log.d("CitySearch", errorMessage)
+                                        showErrorMessage = true
+                                    } else {
+                                        showErrorMessage = false
+                                    }
+                                }
+                            }
+                        }
+                    )
+                )
+
+                // Display error message if needed
+                if (showErrorMessage && errorMessage.isNotEmpty()) {
+                    Text(
+                        text = errorMessage,
+                        color = MaterialTheme.colorScheme.error,
+                        style = TextStyle(fontSize = 12.sp),
+                        modifier = Modifier.padding(start = 16.dp, top = 4.dp)
+                    )
+                }
                 AutoSizeText(
                     text = controller.getCity(),
                     textStyle = TextStyle(fontSize = 48.sp, fontWeight = FontWeight.Bold)
@@ -88,8 +145,8 @@ class MainScreenWeather(
                 Text("\uD83D\uDCA7 Humidity: ${currentHourForecast.humidity}%")
                 Text("\uD83D\uDCA8 Wind Speed: ${currentHourForecast.windSpeed} m/s")
 
-                Text("\uD83C\uDF05 Sunrise: ${formatTime1(currentDayForecast.first().sunrise)}")
-                Text("\uD83C\uDF04 Sunset: ${formatTime1(currentDayForecast.first().sunset)}")
+//                Text("\uD83C\uDF05 Sunrise: ${formatTime1(currentDayForecast.first().sunrise)}")
+//                Text("\uD83C\uDF04 Sunset: ${formatTime1(currentDayForecast.first().sunset)}")
                 Spacer(Modifier.weight(3f))
             }
         }

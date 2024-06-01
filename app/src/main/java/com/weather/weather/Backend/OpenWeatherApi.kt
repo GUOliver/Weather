@@ -36,6 +36,9 @@ class OpenWeatherApi(weatherApiKey:String, settingsData:SettingsData, previousRe
 
     companion object{
         suspend fun getLatLong(city: String,weatherApiKey: String?):LatNLong?{
+            if (_getLatLong(city, weatherApiKey)?.isEmpty() == true) {
+                return null
+            }
             return _getLatLong(city,weatherApiKey)?.get(0)
         }
         suspend fun getLatLong(city: String,weatherApiKey: String?,length: Int):Array<LatNLong>?{
@@ -67,7 +70,7 @@ class OpenWeatherApi(weatherApiKey:String, settingsData:SettingsData, previousRe
                         ))
                 }
                 return parsedResults.toTypedArray()
-            }catch (e:Exception){
+            } catch (e:Exception){
                 Log.e("weatherError",e.stackTraceToString())
                 //it will be a huge pain to work with static
                 //so i blame everything on 'unknown city'

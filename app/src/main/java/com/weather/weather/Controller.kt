@@ -3,19 +3,15 @@ package com.weather.weather
 import android.util.Log
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.weather.weather.Backend.DataWorker
 import com.weather.weather.Backend.OpenMeteoApi
@@ -24,6 +20,7 @@ import com.weather.weather.Backend.ResponseRaw
 import com.weather.weather.Backend.SettingsData
 import com.weather.weather.Backend.WeatherApiBaseClass
 import com.weather.weather.Ui.DaysWeatherLong
+import com.weather.weather.Ui.HourWeatherShort
 import com.weather.weather.Ui.MainScreenWeather
 import com.weather.weather.Ui.WeatherBar
 import com.weather.weather.Ui.WeatherSettings
@@ -37,6 +34,7 @@ class Controller {
     private val weatherBar: WeatherBar = WeatherBar()
     private val weatherSettings: WeatherSettings = WeatherSettings(this)
     private val mainScreenWeather: MainScreenWeather = MainScreenWeather(this)
+    private val hourWeatherShort: HourWeatherShort = HourWeatherShort(this)
     private val daysWeatherLong: DaysWeatherLong = DaysWeatherLong(this)
     init{
         firstStart = dataWorker.getDataBoolean("firstStart")?:true
@@ -48,6 +46,7 @@ class Controller {
     // Resets stored weather responses when user changes settings
     private fun resetResponse(){
         daysWeatherLong.resetForecast()
+        hourWeatherShort.resetForecast()
         mainScreenWeather.resetForecast()
         dataWorker.removeDataString("previousResponse")
         dataWorker.removeDataString("previousDateResponse")
@@ -85,6 +84,7 @@ class Controller {
         weatherApi.subscribeError(this::onError)
         weatherApi.subscribeError(weatherBar::onError)
         weatherApi.subscribe(this::saveLastResponse)
+        weatherApi.subscribe(hourWeatherShort::onForecastChange)
         weatherApi.subscribe(daysWeatherLong::onForecastChange)
         weatherApi.subscribe(mainScreenWeather::onForecastChange)
         weatherApi.start()
@@ -158,7 +158,7 @@ class Controller {
         createWeatherApi()
     }
 
-    suspend fun setCity(city:String){
+    suspend fun setCity(city:String): Int {
         resetResponse()
         val latNlong:WeatherApiBaseClass.LatNLong? = when(weatherApi.gWeatherProvider()){
             WeatherProviders.OPENMETEO -> {
@@ -167,13 +167,18 @@ class Controller {
             WeatherProviders.OPENWEATHER -> {
                 GlobalScope.async {OpenWeatherApi.getLatLong(city,weatherApi.gWeatherKey())}.await()
             }
-            else -> { null }
         }
-        if(latNlong != null) {
+        return if (latNlong != null) {
             dataWorker.setData("latitude", latNlong.latitude)
             dataWorker.setData("longitude", latNlong.longitude)
             dataWorker.setData("city", latNlong.city)
             createWeatherApi()
+            // Return 0 to indicate success.
+            0
+        } else {
+            createWeatherApi()
+            // Return -2 if the city is not found or an error occured in fetching data
+            -1
         }
     }
 
@@ -226,6 +231,7 @@ class Controller {
                 .verticalScroll(scrollState)
         ) {
             mainScreenWeather.Render()
+            hourWeatherShort.Render()
             daysWeatherLong.Render()
         }
     }

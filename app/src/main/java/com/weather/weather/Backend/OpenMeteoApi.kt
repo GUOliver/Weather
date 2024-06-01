@@ -35,6 +35,9 @@ class OpenMeteoApi(settingsData:SettingsData, previousResponse : ResponseRaw? = 
     }
     companion object{
         suspend fun getLatLong(city: String,weatherApiKey: String?):LatNLong?{
+            if (_getLatLong(city, weatherApiKey)?.isEmpty() == true) {
+                return null
+            }
             return _getLatLong(city, weatherApiKey)?.get(0)
         }
         suspend fun getLatLong(city: String,weatherApiKey: String?,length: Int):Array<LatNLong>?{

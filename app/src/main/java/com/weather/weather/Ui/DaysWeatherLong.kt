@@ -24,7 +24,7 @@ import kotlinx.coroutines.flow.StateFlow
 class DaysWeatherLong(controller: Controller) {
     private val controller:Controller
     private val forecast =  mutableStateListOf<WeatherApiBaseClass.DailyForecast>()
-    var temperatureSymbol: StateFlow<TemperatureSymbols> = MutableStateFlow(TemperatureSymbols.CELSIUS)
+
     init {
         this.controller = controller
     }
@@ -73,7 +73,7 @@ class DaysWeatherLong(controller: Controller) {
                 modifier = Modifier.weight(0.3f)
             )
             Text(
-                "Min $minTemperature / Max $maxTemperature ${controller.getWeatherMetrics().symbol}",
+                "$minTemperature / $maxTemperature ${controller.getWeatherMetrics().symbol}",
                 modifier = Modifier.weight(0.3f)
             )
         }
