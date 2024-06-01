@@ -110,6 +110,7 @@ class OpenMeteoApi(settingsData:SettingsData, previousResponse : ResponseRaw? = 
                     pressure = -1,
                     humidity = -1,
                     windSpeed = -1f,
+                    feelLikeTemp = -1f
                 )
                 hourlyForecast.add(hourWeather)
                 if(dailyForecast.size == 0 || dailyForecast.last().dayOfMonth != hourWeather.dayOfMonth ){

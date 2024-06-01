@@ -136,6 +136,10 @@ class Controller {
     fun getWeatherMetrics():TemperatureSymbols{
         return weatherApi.gTemperatureSymbol()
     }
+    fun setWeatherMetrics(temperatureSymbol: TemperatureSymbols){
+        dataWorker.setData("temperatureSymbol",temperatureSymbol.toString())
+        createWeatherApi()
+    }
     fun getCity():String{
         return weatherApi.gCity()
     }

@@ -61,8 +61,34 @@ class WeatherSettings(controller: Controller) {
     fun Render() {
         var weatherApiKey by rememberSaveable{mutableStateOf(controller.getWeatherKey()) }
         var weatherProvider by remember {mutableStateOf(controller.getWeatherProvider())}
-//        var temperatureMetrics by remember {mutableStateOf(controller.getWeatherMetrics())}
+        var temperatureMetrics by remember {mutableStateOf(controller.getWeatherMetrics())}
         Column(modifier = Modifier) {
+            ItemInList(
+                text = "Select temperature unit",
+                onSaveFunction = {
+                    controller.setWeatherMetrics(temperatureMetrics)
+                },
+                onCancelFunction = {
+                    temperatureMetrics = controller.getWeatherMetrics()
+                }
+            ) {
+                Text(text = "Select temperature unit:", modifier = Modifier.padding(5.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    RadioButton(
+                        selected = temperatureMetrics == TemperatureSymbols.CELSIUS,
+                        onClick = { temperatureMetrics = TemperatureSymbols.CELSIUS }
+                    )
+                    Text(text = TemperatureSymbols.CELSIUS.symbol)
+                }
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    RadioButton(
+                        selected = temperatureMetrics == TemperatureSymbols.FAHRENHEIT,
+                        onClick = { temperatureMetrics = TemperatureSymbols.FAHRENHEIT }
+                    )
+                    Text(text = TemperatureSymbols.FAHRENHEIT.symbol)
+                }
+
+            }
 
             run {
                 val changeUi = remember { mutableStateOf(false )}

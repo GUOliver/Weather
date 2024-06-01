@@ -38,6 +38,7 @@ open class WeatherApiBaseClass(
         val pressure: Int,
         val humidity: Int,
         val windSpeed: Float,
+        val feelLikeTemp: Float
     )
 
     data class DailyForecast(

@@ -112,6 +112,13 @@ class OpenWeatherApi(weatherApiKey:String, settingsData:SettingsData, previousRe
                     TemperatureSymbols.FAHRENHEIT -> celsiusToFahrenheit(kelvinToCelcius(mainObject["temp"]!!.jsonPrimitive.float))
                     else -> mainObject["temp"]!!.jsonPrimitive.float  // Add default case for safety, even if unused
                 }
+
+                val feelLikeTemperature = when (temperatureSymbol) {
+                    TemperatureSymbols.CELSIUS -> kelvinToCelcius(mainObject["feels_like"]!!.jsonPrimitive.float)
+                    TemperatureSymbols.FAHRENHEIT -> celsiusToFahrenheit(kelvinToCelcius(mainObject["feels_like"]!!.jsonPrimitive.float))
+                    else -> mainObject["feels_like"]!!.jsonPrimitive.float  // Add default case for safety, even if unused
+                }
+
                 val hourWeather = HourForecast(
                     temperature = temperature,  // Use the computed temperature here
                     weatherCondition = formatWeatherCode(jsonObject["weather"]!!.jsonArray[0].jsonObject["id"]!!.jsonPrimitive.int),
@@ -120,7 +127,8 @@ class OpenWeatherApi(weatherApiKey:String, settingsData:SettingsData, previousRe
                     dayOfWeek = DaysOfTheWeek.entries[timeZone.dayOfWeek.value-1],
                     pressure = mainObject["pressure"]!!.jsonPrimitive.int,
                     humidity = mainObject["humidity"]!!.jsonPrimitive.int,
-                    windSpeed = windObject["speed"]!!.jsonPrimitive.float
+                    windSpeed = windObject["speed"]!!.jsonPrimitive.float,
+                    feelLikeTemp = feelLikeTemperature
                 )
 
                 hourlyForecast.add(hourWeather)
