@@ -1,11 +1,15 @@
 package com.weather.weather.Ui
 
+import android.app.AlertDialog
+import android.content.Context
+import android.graphics.Bitmap
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -41,11 +45,15 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.FileProvider
+import coil.compose.rememberAsyncImagePainter
 import com.weather.weather.Backend.WeatherApiBaseClass
 import com.weather.weather.Controller
 import com.weather.weather.Months
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
+import java.io.File
+import java.io.FileOutputStream
 import java.time.Instant
 import java.time.LocalDateTime
 import java.time.ZoneId
@@ -53,7 +61,6 @@ import java.time.ZoneOffset
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
-import coil.compose.rememberImagePainter
 
 class MainScreenWeather(
     controller:Controller,
@@ -80,29 +87,58 @@ class MainScreenWeather(
         return dt.format(DateTimeFormatter.ofPattern("hh:mm a"))
     }
 
+    private fun getImageUriFromBitmap(context: Context, bitmap: Bitmap): Uri {
+        val tempFile = File(context.externalCacheDir, "tempImage.jpg") // Temporary file path
+        val fos = FileOutputStream(tempFile)
+        bitmap.compress(Bitmap.CompressFormat.JPEG, 100, fos)
+        fos.close()
+        return FileProvider.getUriForFile(context, "${context.packageName}.provider", tempFile)
+    }
+
+
     @Composable
-    fun Render(modifier: Modifier = Modifier) {
+    fun Render() {
         var backgroundImageUri by remember { mutableStateOf<Uri?>(null) }
 
-        val backgroundImagePicker = rememberLauncherForActivityResult(
+        rememberLauncherForActivityResult(
             ActivityResultContracts.GetContent()
         ) { uri: Uri? ->
             uri?.let { backgroundImageUri = it }
         }
 
         Column(modifier = Modifier.fillMaxSize()) {
-            Button(onClick = { backgroundImagePicker.launch("image/*") }) {
-                Text(text = "Select Background Image")
+            var imageUri by remember { mutableStateOf<Uri?>(null) }
+            val context = LocalContext.current
+            val takeImageResult = rememberLauncherForActivityResult(contract = ActivityResultContracts.TakePicturePreview()) { bitmap ->
+                bitmap?.let {
+                    // Handle the bitmap
+                    imageUri = getImageUriFromBitmap(context, it)
+                }
+            }
+            val pickImageResult = rememberLauncherForActivityResult(contract = ActivityResultContracts.GetContent()) { uri ->
+                imageUri = uri
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Button(onClick = {
+                val photoOptions = arrayOf("Take Photo", "Pick from Gallery")
+                AlertDialog.Builder(context).setTitle("Choose an option").setItems(photoOptions) { _, which ->
+                    when (which) {
+                        0 -> takeImageResult.launch(null)
+                        1 -> pickImageResult.launch("image/*")
+                    }
+                }.show()
+            }) {
+                Text("Update Background")
+            }
 
-            backgroundImageUri?.let { uri ->
-                Image(
-                    painter = rememberImagePainter(data = uri),
-                    contentDescription = null,
-                    modifier = Modifier.fillMaxWidth().height(200.dp)
-                )
+            imageUri?.let {
+                Box(modifier = Modifier.fillMaxSize()) {
+                    Image(
+                        painter = rememberAsyncImagePainter(model = it),
+                        contentDescription = "Selected image",
+                        modifier = Modifier.fillMaxWidth().height(200.dp)
+                    )
+                }
             }
         }
 

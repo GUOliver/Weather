@@ -61,6 +61,9 @@ android {
 
 dependencies {
 //    implementation("io.coil-kt:coil-compose:2.1.0")
+    implementation("com.google.android.gms:play-services-location:18.0.0")
+    implementation("com.squareup.okhttp3:okhttp:4.9.1")
+    implementation("com.squareup.okhttp3:logging-interceptor:4.9.1")
     implementation("io.coil-kt:coil-compose:2.6.0")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
     implementation("androidx.core:core-ktx:1.12.0")
