@@ -2,8 +2,11 @@ package com.weather.weather.Ui
 
 import android.app.AlertDialog
 import android.content.Context
+import android.content.pm.PackageManager
 import android.graphics.Bitmap
+import android.location.Location
 import android.net.Uri
+import android.os.Looper
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
@@ -47,6 +50,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.FileProvider
 import coil.compose.rememberAsyncImagePainter
+import com.google.android.gms.location.LocationAvailability
+import com.google.android.gms.location.LocationCallback
+import com.google.android.gms.location.LocationRequest
+import com.google.android.gms.location.LocationResult
+import com.google.android.gms.location.LocationServices
 import com.weather.weather.Backend.WeatherApiBaseClass
 import com.weather.weather.Controller
 import com.weather.weather.Months
@@ -61,6 +69,7 @@ import java.time.ZoneOffset
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
+import android.Manifest
 
 class MainScreenWeather(
     controller:Controller,
@@ -95,9 +104,49 @@ class MainScreenWeather(
         return FileProvider.getUriForFile(context, "${context.packageName}.provider", tempFile)
     }
 
+    private fun getCurrentLocation(context: Context, onLocationReceived: (Location?) -> Unit) {
+        try {
+            val fusedLocationClient = LocationServices.getFusedLocationProviderClient(context)
+            val locationRequest = LocationRequest.create().apply {
+                interval = 10_000
+                fastestInterval = 5_000
+                priority = LocationRequest.PRIORITY_HIGH_ACCURACY
+            }
+
+            val locationCallback = object : LocationCallback() {
+                override fun onLocationResult(locationResult: LocationResult) {
+                    locationResult.lastLocation?.let {
+                        onLocationReceived(it)
+                    } ?: run {
+                        onLocationReceived(null)
+                    }
+                    fusedLocationClient.removeLocationUpdates(this)
+                }
+
+                override fun onLocationAvailability(availability: LocationAvailability) {
+                    if (!availability.isLocationAvailable) {
+                        onLocationReceived(null)
+                    }
+                }
+            }
+
+            if (context.checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED ||
+                context.checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+                fusedLocationClient.requestLocationUpdates(locationRequest, locationCallback, Looper.getMainLooper())
+            } else {
+                onLocationReceived(null)
+            }
+
+        } catch (e: Exception) {
+            onLocationReceived(null)
+        }
+    }
+
+
 
     @Composable
     fun Render() {
+        val context = LocalContext.current
         var backgroundImageUri by remember { mutableStateOf<Uri?>(null) }
 
         rememberLauncherForActivityResult(
@@ -108,7 +157,7 @@ class MainScreenWeather(
 
         Column(modifier = Modifier.fillMaxSize()) {
             var imageUri by remember { mutableStateOf<Uri?>(null) }
-            val context = LocalContext.current
+
             val takeImageResult = rememberLauncherForActivityResult(contract = ActivityResultContracts.TakePicturePreview()) { bitmap ->
                 bitmap?.let {
                     // Handle the bitmap
@@ -197,6 +246,60 @@ class MainScreenWeather(
                     )
                 }
                 Spacer(Modifier.height(16.dp))
+
+                // New Button to fetch weather by current location
+                val requestPermissionLauncher = rememberLauncherForActivityResult(
+                    contract = ActivityResultContracts.RequestPermission()
+                ) { isGranted: Boolean ->
+                    if (isGranted) {
+                        getCurrentLocation(context) { location ->
+                            if (location != null) {
+                                GlobalScope.launch {
+                                    val resultCode = controller.setCityByCoordinates(context, location.latitude, location.longitude)
+                                    if (resultCode == -1) {
+                                        errorMessage = "Unable to determine city from current location."
+                                        showErrorMessage = true
+                                    } else {
+                                        showErrorMessage = false
+                                    }
+                                }
+                            } else {
+                                errorMessage = "Failed to fetch location."
+                                showErrorMessage = true
+                            }
+                        }
+                    } else {
+                        errorMessage = "Location permission is required to get current location"
+                        showErrorMessage = true
+                    }
+                }
+
+                Button(onClick = {
+                    if (context.checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED ||
+                        context.checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+                        getCurrentLocation(context) { location ->
+                            if (location != null) {
+                                GlobalScope.launch {
+                                    val resultCode = controller.setCityByCoordinates(context, location.latitude, location.longitude)
+                                    if (resultCode == -1) {
+                                        errorMessage = "Unable to determine city from current location."
+                                        showErrorMessage = true
+                                    } else {
+                                        showErrorMessage = false
+                                    }
+                                }
+                            } else {
+                                errorMessage = "Failed to fetch location."
+                                showErrorMessage = true
+                            }
+                        }
+                    } else {
+                        requestPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
+                    }
+                }) {
+                    Text("Fetch Weather by Current Location")
+                }
+
                 AutoSizeText(
                     text = controller.getCity(),
                     textStyle = TextStyle(fontSize = 48.sp, fontWeight = FontWeight.Bold)

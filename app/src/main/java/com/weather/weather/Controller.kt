@@ -27,6 +27,13 @@ import com.weather.weather.Ui.WeatherSettings
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.async
 
+import android.content.Context
+import android.location.Geocoder
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import java.util.Locale
+
+
 class Controller {
     private val firstStart:Boolean
     private val dataWorker:DataWorker = DataWorker()
@@ -150,6 +157,23 @@ class Controller {
         return weatherApi.gLongitude()
     }
 
+    suspend fun getCityNameFromCoordinates(context: Context, latitude: Double, longitude: Double): String? {
+        return withContext(Dispatchers.IO) {
+            try {
+                val geocoder = Geocoder(context, Locale.getDefault())
+                val addresses = geocoder.getFromLocation(latitude, longitude, 1)
+                if (addresses?.isNotEmpty() == true) {
+                    addresses[0].locality
+                } else {
+                    null
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+                null
+            }
+        }
+    }
+
 
     fun setWeatherApi(apiKey:String,weatherProvider: WeatherProviders){
         if(dataWorker.getDataString("weatherProvider") != weatherProvider.toString()){
@@ -161,6 +185,17 @@ class Controller {
         dataWorker.removeDataString("previousResponse")
         createWeatherApi()
     }
+
+    suspend fun setCityByCoordinates(context: Context, latitude: Double, longitude: Double): Int {
+        val cityName = getCityNameFromCoordinates(context, latitude, longitude)
+        return if (cityName != null) {
+            setCity(cityName)
+        } else {
+            // Return an error code if the city name couldn't be determined
+            -1
+        }
+    }
+
 
     suspend fun setCity(city:String): Int {
         resetResponse()
