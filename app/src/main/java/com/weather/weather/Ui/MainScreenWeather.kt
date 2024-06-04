@@ -12,7 +12,6 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -48,7 +47,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.core.content.FileProvider
 import coil.compose.rememberAsyncImagePainter
 import com.google.android.gms.location.LocationAvailability
 import com.google.android.gms.location.LocationCallback
@@ -60,16 +58,17 @@ import com.weather.weather.Controller
 import com.weather.weather.Months
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
-import java.io.File
-import java.io.FileOutputStream
 import java.time.Instant
 import java.time.LocalDateTime
 import java.time.ZoneId
-import java.time.ZoneOffset
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 import android.Manifest
+import android.util.Log
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.core.content.ContextCompat
 
 class MainScreenWeather(
     controller:Controller,
@@ -89,19 +88,6 @@ class MainScreenWeather(
 
     fun resetForecast() {
         currentDay.value = null
-    }
-
-    private fun formatTime(epochSeconds: Long): String {
-        val dt = LocalDateTime.ofEpochSecond(epochSeconds, 0, ZoneOffset.UTC)
-        return dt.format(DateTimeFormatter.ofPattern("hh:mm a"))
-    }
-
-    private fun getImageUriFromBitmap(context: Context, bitmap: Bitmap): Uri {
-        val tempFile = File(context.externalCacheDir, "tempImage.jpg") // Temporary file path
-        val fos = FileOutputStream(tempFile)
-        bitmap.compress(Bitmap.CompressFormat.JPEG, 100, fos)
-        fos.close()
-        return FileProvider.getUriForFile(context, "${context.packageName}.provider", tempFile)
     }
 
     private fun getCurrentLocation(context: Context, onLocationReceived: (Location?) -> Unit) {
@@ -142,52 +128,89 @@ class MainScreenWeather(
         }
     }
 
-
-
     @Composable
     fun Render() {
         val context = LocalContext.current
         var backgroundImageUri by remember { mutableStateOf<Uri?>(null) }
+        var bitmap by remember { mutableStateOf<Bitmap?>(null) }
 
-        rememberLauncherForActivityResult(
-            ActivityResultContracts.GetContent()
-        ) { uri: Uri? ->
-            uri?.let { backgroundImageUri = it }
+        // Activity Result Launcher for taking a picture
+        val takeImageResult = rememberLauncherForActivityResult(ActivityResultContracts.TakePicturePreview()) { bmp: Bitmap? ->
+            bmp?.let {
+                bitmap = it
+            } ?: run {
+                // Handle the situation when bmp is null to avoid potential crashes
+                bitmap = null
+            }
+            Log.d("TestCamera", "check the background bitmap: $bitmap" )
+        }
+
+        val permissionLauncher = rememberLauncherForActivityResult(
+            contract = ActivityResultContracts.RequestMultiplePermissions()
+        ) { permissions: Map<String, Boolean> ->
+            if (permissions[Manifest.permission.CAMERA] == true) {
+                takeImageResult.launch(null)
+                // Call the function to render the UI if permissions are granted
+                Log.d("Permissions", "Camera permission granted: $permissions")
+            } else {
+                Log.d("Permissions", "Camera permission denied: $permissions")
+            }
+        }
+
+        // Activity Result Launcher for picking an image from the gallery
+        val pickImageResult = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
+            uri?.let {
+                backgroundImageUri = it
+            } ?: run {
+                // Handle the situation when uri is null to avoid potential crashes
+                backgroundImageUri = null
+            }
+            Log.d("TestCamera", "check the background bitmap picked: $backgroundImageUri" )
+        }
+
+        // Button to trigger photo taking or gallery selection
+        Button(onClick = {
+            val photoOptions = arrayOf("Take Photo", "Pick from Gallery")
+            AlertDialog.Builder(context).setTitle("Choose an option").setItems(photoOptions) { _, which ->
+                when (which) {
+                    0 -> {
+                        // Check for camera permission before taking a picture
+                        if (ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
+                            permissionLauncher.launch(arrayOf(Manifest.permission.CAMERA))
+                        } else {
+                            takeImageResult.launch(null)
+                        }
+                    }
+                    1 -> pickImageResult.launch("image/*")
+                }
+            }.show()
+        }) {
+            Text("Update Background")
         }
 
         Column(modifier = Modifier.fillMaxSize()) {
-            var imageUri by remember { mutableStateOf<Uri?>(null) }
-
-            val takeImageResult = rememberLauncherForActivityResult(contract = ActivityResultContracts.TakePicturePreview()) { bitmap ->
-                bitmap?.let {
-                    // Handle the bitmap
-                    imageUri = getImageUriFromBitmap(context, it)
-                }
-            }
-            val pickImageResult = rememberLauncherForActivityResult(contract = ActivityResultContracts.GetContent()) { uri ->
-                imageUri = uri
-            }
-
-            Button(onClick = {
-                val photoOptions = arrayOf("Take Photo", "Pick from Gallery")
-                AlertDialog.Builder(context).setTitle("Choose an option").setItems(photoOptions) { _, which ->
-                    when (which) {
-                        0 -> takeImageResult.launch(null)
-                        1 -> pickImageResult.launch("image/*")
-                    }
-                }.show()
-            }) {
-                Text("Update Background")
+            bitmap?.let {
+                Image(
+                    bitmap = it.asImageBitmap(),
+                    contentDescription = "Captured Image",
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(200.dp)
+                        .padding(8.dp)
+                        .border(1.dp, Color.Gray)
+                )
             }
 
-            imageUri?.let {
-                Box(modifier = Modifier.fillMaxSize()) {
-                    Image(
-                        painter = rememberAsyncImagePainter(model = it),
-                        contentDescription = "Selected image",
-                        modifier = Modifier.fillMaxWidth().height(200.dp)
-                    )
-                }
+            backgroundImageUri?.let {
+                Image(
+                    painter = rememberAsyncImagePainter(model = it),
+                    contentDescription = "Selected Image",
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(200.dp)
+                        .padding(8.dp)
+                        .border(1.dp, Color.Gray)
+                )
             }
         }
 

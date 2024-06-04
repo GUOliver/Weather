@@ -347,7 +347,8 @@ class WeatherSettings(controller: Controller) {
                     singleLine = true,
                     isError = key.value == "")
             }
-            Text(text = "Enter city name", fontSize = 24.sp)
+            Spacer(Modifier.height(16.dp))
+            Text(text = "Enter a city name You Like", fontSize = 24.sp)
             if(notDetectableCity.value){
                 Text(text = "Couldn't find city",fontSize = 18.sp)
             }
