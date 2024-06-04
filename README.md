@@ -15,8 +15,10 @@ The most challenging part of developing this application was processing and mana
 
 I also tried using Jetpack, a more modern way to compose the UI instead of using the traditional Android XML layout methods to update the UI.
 
-## UI Design
+## UI Design and Demo Link
 Figma Prototype Design link: https://www.figma.com/design/8uIkmYZpknZKzVtqyOgLnZ/Weather-Display-App?node-id=0%3A1&t=qJaF7JO92u38OBeO-1
+
+Demo Link on Youtube: https://youtu.be/TkTZWqob7P0
 
 ## Screenshots
 <img src="screenshots/img1.png" alt="img.png" style="zoom:50%;" /> 
